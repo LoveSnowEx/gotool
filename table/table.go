@@ -1,11 +1,16 @@
 package table
 
 import (
-	"bufio"
+	"cmp"
 	"encoding/csv"
 	"os"
 	"slices"
+
+	"github.com/LoveSnowEx/gotool/errors"
 )
+
+type Row = []string
+type Rows = []Row
 
 type Table interface {
 	// Load loads a table from a csv file
@@ -13,21 +18,21 @@ type Table interface {
 	// Save saves a table to a csv file
 	Save(filename string) error
 	// Fields returns the fields of the table
-	Fields() []string
+	Fields() Row
 	// Rows returns the rows of the table
-	Rows() [][]string
+	Rows() Rows
 	// SetFields sets the fields of the table
-	SetFields([]string)
+	SetFields(fields Row)
 	// SetRows sets the rows of the table
-	SetRows([][]string)
+	SetRows(rows Rows)
 	// FieldIndex returns the index of a field, or -1 if it doesn't exist
-	FieldIndex(string) int
+	FieldIndex(field string) int
 	// AppendRows appends rows to the table
-	AppendRows(...[]string)
+	AppendRows(rows ...Row)
 	// Sort sorts the table by a field
-	Sort(string)
+	Sort(field string) error
 	// SortFunc sorts the table by a function
-	SortFunc(func(row1, row2 []string) int)
+	SortFunc(func(row1, row2 Row) int)
 }
 
 type table struct {
@@ -38,8 +43,9 @@ type table struct {
 
 func New() Table {
 	return &table{
-		fields: make([]string, 0),
-		rows:   make([][]string, 0),
+		fields:        make(Row, 0),
+		rows:          make(Rows, 0),
+		fieldIndicies: make(map[string]int),
 	}
 }
 
@@ -64,30 +70,30 @@ func (t *table) Save(filename string) (err error) {
 		return err
 	}
 	defer f.Close()
-	buf := bufio.NewWriter(f)
-	defer buf.Flush()
-	w := csv.NewWriter(buf)
+	w := csv.NewWriter(f)
 	defer w.Flush()
-	err = w.WriteAll(append(
-		[][]string{t.fields},
-		t.rows...,
-	))
+	if err = w.Write(t.fields); err != nil {
+		return
+	}
+	if err = w.WriteAll(t.rows); err != nil {
+		return
+	}
 	return
 }
 
-func (t *table) Fields() []string {
+func (t *table) Fields() Row {
 	return t.fields
 }
 
-func (t *table) Rows() [][]string {
+func (t *table) Rows() Rows {
 	return t.rows
 }
 
-func (t *table) SetFields(fields []string) {
+func (t *table) SetFields(fields Row) {
 	t.fields = fields
 }
 
-func (t *table) SetRows(rows [][]string) {
+func (t *table) SetRows(rows Rows) {
 	t.rows = rows
 }
 
@@ -108,23 +114,21 @@ func (t *table) FieldIndex(field string) int {
 	return -1
 }
 
-func (t *table) AppendRows(rows ...[]string) {
+func (t *table) AppendRows(rows ...Row) {
 	t.rows = append(t.rows, rows...)
 }
 
-func (t *table) Sort(field string) {
-	t.SortFunc(func(row1, row2 []string) int {
-		switch {
-		case row1[t.FieldIndex(field)] < row2[t.FieldIndex(field)]:
-			return -1
-		case row1[t.FieldIndex(field)] > row2[t.FieldIndex(field)]:
-			return 1
-		default:
-			return 0
-		}
+func (t *table) Sort(field string) (err error) {
+	idx := t.FieldIndex(field)
+	if idx == -1 {
+		return errors.ErrInvalidField
+	}
+	t.SortFunc(func(row1, row2 Row) int {
+		return cmp.Compare[string](row1[idx], row2[idx])
 	})
+	return
 }
 
-func (t *table) SortFunc(f func(row1, row2 []string) int) {
-	slices.SortFunc[[][]string](t.rows, f)
+func (t *table) SortFunc(f func(row1, row2 Row) int) {
+	slices.SortFunc[Rows](t.rows, f)
 }
