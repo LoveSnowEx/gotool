@@ -2,9 +2,12 @@ package table
 
 import (
 	"bufio"
+	"cmp"
 	"encoding/csv"
 	"os"
 	"slices"
+
+	"github.com/LoveSnowEx/gotool/errors"
 )
 
 type Table interface {
@@ -17,15 +20,15 @@ type Table interface {
 	// Rows returns the rows of the table
 	Rows() [][]string
 	// SetFields sets the fields of the table
-	SetFields([]string)
+	SetFields(fields []string)
 	// SetRows sets the rows of the table
-	SetRows([][]string)
+	SetRows(rows [][]string)
 	// FieldIndex returns the index of a field, or -1 if it doesn't exist
-	FieldIndex(string) int
+	FieldIndex(field string) int
 	// AppendRows appends rows to the table
-	AppendRows(...[]string)
+	AppendRows(rows ...[]string)
 	// Sort sorts the table by a field
-	Sort(string)
+	Sort(field string) error
 	// SortFunc sorts the table by a function
 	SortFunc(func(row1, row2 []string) int)
 }
@@ -112,17 +115,15 @@ func (t *table) AppendRows(rows ...[]string) {
 	t.rows = append(t.rows, rows...)
 }
 
-func (t *table) Sort(field string) {
+func (t *table) Sort(field string) (err error) {
+	idx := t.FieldIndex(field)
+	if idx == -1 {
+		return errors.ErrInvalidField
+	}
 	t.SortFunc(func(row1, row2 []string) int {
-		switch {
-		case row1[t.FieldIndex(field)] < row2[t.FieldIndex(field)]:
-			return -1
-		case row1[t.FieldIndex(field)] > row2[t.FieldIndex(field)]:
-			return 1
-		default:
-			return 0
-		}
+		return cmp.Compare[string](row1[idx], row2[idx])
 	})
+	return
 }
 
 func (t *table) SortFunc(f func(row1, row2 []string) int) {
