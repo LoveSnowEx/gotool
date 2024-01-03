@@ -13,22 +13,18 @@ type Row = []string
 type Rows = []Row
 
 type Table interface {
-	// Load loads a table from a csv file
-	Load(filename string) error
 	// Save saves a table to a csv file
 	Save(filename string) error
 	// Fields returns the fields of the table
 	Fields() Row
+	// FieldIndex returns the index of a field, or -1 if the field does not exist
+	FieldIndex(field string) int
 	// Rows returns the rows of the table
 	Rows() Rows
-	// SetFields sets the fields of the table
-	SetFields(fields Row)
-	// SetRows sets the rows of the table
-	SetRows(rows Rows)
-	// FieldIndex returns the index of a field, or -1 if it doesn't exist
-	FieldIndex(field string) int
-	// AppendRows appends rows to the table
-	AppendRows(rows ...Row)
+	// Append appends rows to the table
+	Append(rows ...Row)
+	// Clear clears the rows of the table
+	Clear()
 	// Sort sorts the table by a field
 	Sort(field string) error
 	// SortFunc sorts the table by a function
@@ -36,32 +32,40 @@ type Table interface {
 }
 
 type table struct {
-	fields        []string
+	fields        Row
 	fieldIndicies map[string]int
-	rows          [][]string
+	rows          Rows
 }
 
-func New() Table {
-	return &table{
-		fields:        make(Row, 0),
-		rows:          make(Rows, 0),
-		fieldIndicies: make(map[string]int),
+// New creates a new table
+func New(fields Row, rows ...Row) Table {
+	t := &table{
+		fields: fields,
+		rows:   rows,
 	}
+	t.makeFieldIndicies()
+	return t
 }
 
-func (t *table) Load(filename string) (err error) {
+// NewFromFile creates a new table from a csv file
+func NewFromFile(filename string) (t Table, err error) {
 	f, err := os.Open(filename)
 	if err != nil {
-		return err
+		return
 	}
 	defer f.Close()
 	records, err := csv.NewReader(f).ReadAll()
 	if err != nil {
-		return err
+		return
 	}
-	t.fields = records[0]
-	t.rows = records[1:]
-	return
+	return New(records[0], records[1:]...), nil
+}
+
+func (t *table) makeFieldIndicies() {
+	t.fieldIndicies = make(map[string]int)
+	for i, field := range t.fields {
+		t.fieldIndicies[field] = i
+	}
 }
 
 func (t *table) Save(filename string) (err error) {
@@ -85,37 +89,23 @@ func (t *table) Fields() Row {
 	return t.fields
 }
 
-func (t *table) Rows() Rows {
-	return t.rows
-}
-
-func (t *table) SetFields(fields Row) {
-	t.fields = fields
-}
-
-func (t *table) SetRows(rows Rows) {
-	t.rows = rows
-}
-
-func (t *table) makeFieldIndicies() {
-	t.fieldIndicies = make(map[string]int)
-	for i, field := range t.fields {
-		t.fieldIndicies[field] = i
-	}
-}
-
 func (t *table) FieldIndex(field string) int {
-	if t.fieldIndicies == nil {
-		t.makeFieldIndicies()
-	}
 	if index, ok := t.fieldIndicies[field]; ok {
 		return index
 	}
 	return -1
 }
 
-func (t *table) AppendRows(rows ...Row) {
+func (t *table) Rows() Rows {
+	return t.rows
+}
+
+func (t *table) Append(rows ...Row) {
 	t.rows = append(t.rows, rows...)
+}
+
+func (t *table) Clear() {
+	t.rows = make(Rows, 0)
 }
 
 func (t *table) Sort(field string) (err error) {
