@@ -1,0 +1,36 @@
+package sqltool
+
+import "fmt"
+
+type DatabaseConfig struct {
+	Driver   string
+	Host     string
+	Port     string
+	Database string
+	Username string
+	Password string
+	SSLMode  string
+}
+
+func (c *DatabaseConfig) Dsn() string {
+	switch c.Driver {
+	case "mysql":
+		return c.mysqlDsn()
+	case "postgres":
+		return c.postgresDsn()
+	case "sqlite", "sqlite3":
+		return c.Database
+	default:
+		return ""
+	}
+}
+
+func (c *DatabaseConfig) mysqlDsn() string {
+	return fmt.Sprintf("%s:%s@tcp(%s:%s)/%s?charset=utf8mb4",
+		c.Username, c.Password, c.Host, c.Port, c.Database)
+}
+
+func (c *DatabaseConfig) postgresDsn() string {
+	return fmt.Sprintf("host=%s port=%s user=%s password=%s dbname=%s sslmode=%s",
+		c.Host, c.Port, c.Username, c.Password, c.Database, c.SSLMode)
+}
