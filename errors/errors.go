@@ -4,10 +4,12 @@ type Error uint64
 
 const (
 	ErrInvalidField Error = 1 << iota
+	ErrUnknownDatabaseDriver
 )
 
 var errorStrings = map[Error]string{
-	ErrInvalidField: "invalid field",
+	ErrInvalidField:          "invalid field",
+	ErrUnknownDatabaseDriver: "unknown database driver",
 }
 
 func (e Error) Error() string {
