@@ -1,4 +1,4 @@
-package sqltool
+package database
 
 import "fmt"
 
