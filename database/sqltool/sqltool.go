@@ -26,3 +26,29 @@ func PK(db *sql.DB, table string) (pk string, err error) {
 	}
 	return
 }
+
+func Tables(db *sql.DB) (tables []string, err error) {
+	sql, args, err := sq.
+		Select("TABLE_NAME").
+		From("INFORMATION_SCHEMA.TABLES").
+		Where("TABLE_SCHEMA = DATABASE()").
+		ToSql()
+	if err != nil {
+		return
+	}
+
+	rows, err := db.Query(sql, args...)
+	if err != nil {
+		return
+	}
+	defer rows.Close()
+
+	for rows.Next() {
+		var table string
+		if err = rows.Scan(&table); err != nil {
+			return
+		}
+		tables = append(tables, table)
+	}
+	return
+}
