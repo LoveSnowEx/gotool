@@ -4,6 +4,7 @@ import (
 	"cmp"
 	"encoding/csv"
 	"os"
+	"path/filepath"
 	"slices"
 
 	"github.com/LoveSnowEx/gotool/errors"
@@ -69,6 +70,12 @@ func (t *table) makeFieldIndicies() {
 }
 
 func (t *table) Save(filename string) (err error) {
+	dir := filepath.Dir(filename)
+	if _, err = os.Stat(dir); os.IsNotExist(err) {
+		if err = os.MkdirAll(dir, 0755); err != nil {
+			return
+		}
+	}
 	f, err := os.Create(filename)
 	if err != nil {
 		return err
