@@ -1,11 +1,15 @@
 package gormtool
 
 import (
+	"sync"
+
 	"github.com/LoveSnowEx/gotool/database"
 	"github.com/LoveSnowEx/gotool/errors"
+	"github.com/panjf2000/ants/v2"
 	"gorm.io/driver/mysql"
 	"gorm.io/driver/postgres"
 	"gorm.io/driver/sqlite"
+	"gorm.io/gen"
 	"gorm.io/gorm"
 )
 
@@ -32,4 +36,27 @@ func postgresOpen(conf *database.Config, opts ...gorm.Option) (db *gorm.DB, err 
 
 func sqliteOpen(conf *database.Config, opts ...gorm.Option) (db *gorm.DB, err error) {
 	return gorm.Open(sqlite.Open(conf.Dsn()), opts...)
+}
+
+func GenDao(g *gen.Generator, numWorker int, tables ...string) (err error) {
+	var wg sync.WaitGroup
+	p, err := ants.NewPoolWithFunc(numWorker, func(table interface{}) {
+		t := table.(string)
+		g.ApplyBasic(g.GenerateModel(t))
+		wg.Done()
+	})
+	if err != nil {
+		return
+	}
+	defer p.Release()
+
+	for _, table := range tables {
+		wg.Add(1)
+		if err = p.Invoke(table); err != nil {
+			return
+		}
+	}
+	wg.Wait()
+	g.Execute()
+	return
 }
