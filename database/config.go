@@ -15,7 +15,7 @@ type Config struct {
 	SSLMode  string
 }
 
-func (c *Config) Dsn() string {
+func (c Config) Dsn() string {
 	switch c.Driver {
 	case "mysql":
 		return c.mysqlDsn()
