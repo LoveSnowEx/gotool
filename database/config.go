@@ -1,11 +1,14 @@
 package database
 
-import "fmt"
+import (
+	"encoding/json"
+	"fmt"
+)
 
 type Config struct {
 	Driver   string
 	Host     string
-	Port     string
+	Port     json.Number
 	Database string
 	Username string
 	Password string
