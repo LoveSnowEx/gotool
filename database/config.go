@@ -34,6 +34,9 @@ func (c *Config) mysqlDsn() string {
 }
 
 func (c *Config) postgresDsn() string {
+	if c.SSLMode == "" {
+		c.SSLMode = "disable"
+	}
 	return fmt.Sprintf("host=%s port=%s user=%s password=%s dbname=%s sslmode=%s",
 		c.Host, c.Port, c.Username, c.Password, c.Database, c.SSLMode)
 }
