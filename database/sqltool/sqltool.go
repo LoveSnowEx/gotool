@@ -7,8 +7,8 @@ import (
 	sq "github.com/Masterminds/squirrel"
 )
 
-func Open(conf *database.Config) (db *sql.DB, err error) {
-	return sql.Open(conf.Driver, conf.Dsn())
+func Open(cfg database.Config) (db *sql.DB, err error) {
+	return sql.Open(cfg.Driver, cfg.Dsn())
 }
 
 func PK(db *sql.DB, table string) (pk string, err error) {
