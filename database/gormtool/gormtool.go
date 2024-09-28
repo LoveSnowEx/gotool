@@ -13,7 +13,7 @@ import (
 	"gorm.io/gorm"
 )
 
-func Open(cfg database.Config, opts ...gorm.Option) (db *gorm.DB, err error) {
+func Open(cfg *database.Config, opts ...gorm.Option) (db *gorm.DB, err error) {
 	switch cfg.Driver {
 	case "mysql":
 		return mysqlOpen(cfg, opts...)
@@ -26,15 +26,15 @@ func Open(cfg database.Config, opts ...gorm.Option) (db *gorm.DB, err error) {
 	}
 }
 
-func mysqlOpen(cfg database.Config, opts ...gorm.Option) (db *gorm.DB, err error) {
+func mysqlOpen(cfg *database.Config, opts ...gorm.Option) (db *gorm.DB, err error) {
 	return gorm.Open(mysql.Open(cfg.Dsn()), opts...)
 }
 
-func postgresOpen(cfg database.Config, opts ...gorm.Option) (db *gorm.DB, err error) {
+func postgresOpen(cfg *database.Config, opts ...gorm.Option) (db *gorm.DB, err error) {
 	return gorm.Open(postgres.Open(cfg.Dsn()), opts...)
 }
 
-func sqliteOpen(cfg database.Config, opts ...gorm.Option) (db *gorm.DB, err error) {
+func sqliteOpen(cfg *database.Config, opts ...gorm.Option) (db *gorm.DB, err error) {
 	return gorm.Open(sqlite.Open(cfg.Dsn()), opts...)
 }
 
