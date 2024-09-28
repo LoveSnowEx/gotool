@@ -3,16 +3,27 @@ package database
 import (
 	"encoding/json"
 	"fmt"
+
+	"github.com/spf13/viper"
 )
 
 type Config struct {
-	Driver   string
-	Host     string
-	Port     json.Number
-	Database string
-	Username string
-	Password string
-	SSLMode  string
+	Driver   string      `mapstructure:"driver"`
+	Host     string      `mapstructure:"host"`
+	Port     json.Number `mapstructure:"port"`
+	Database string      `mapstructure:"database"`
+	Username string      `mapstructure:"username"`
+	Password string      `mapstructure:"password"`
+	SSLMode  string      `mapstructure:"sslmode"`
+}
+
+func ReadViper(v *viper.Viper) (c *Config, err error) {
+	c = new(Config)
+	err = v.Unmarshal(c)
+	if err != nil {
+		panic(err)
+	}
+	return
 }
 
 func (c Config) Dsn() string {
